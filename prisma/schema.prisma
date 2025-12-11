@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReadingStatus {
+  reading
+  done
+  paused
+  wish
+}
+
+model User {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  loginId     String   @unique @map("login_id")
+  displayName String   @map("display_name")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userBooks UserBook[]
+
+  @@map("users")
+}
+
+model UserBook {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String        @map("user_id") @db.Uuid
+  externalId  String        @map("external_id")
+  title       String
+  author      String?
+  pageCount   Int?          @map("page_count")
+  coverUrl    String?       @map("cover_url")
+  status      ReadingStatus @default(reading)
+  currentPage Int           @default(0) @map("current_page")
+  progressPct Int           @default(0) @map("progress_pct") @db.SmallInt
+  goalDate    DateTime?     @map("goal_date") @db.Date
+  startedAt   DateTime?     @map("started_at") @db.Date
+  finishedAt  DateTime?     @map("finished_at") @db.Date
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readingEntries ReadingEntry[]
+  feelings       Feeling[]
+
+  @@unique([userId, externalId])
+  @@map("user_books")
+}
+
+model ReadingEntry {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userBookId  String   @map("user_book_id") @db.Uuid
+  entryDate   DateTime @map("entry_date") @db.Date
+  currentPage Int      @map("current_page")
+  note        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userBook UserBook @relation(fields: [userBookId], references: [id], onDelete: Cascade)
+
+  @@index([userBookId, entryDate])
+  @@map("reading_entries")
+}
+
+model Feeling {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userBookId String   @map("user_book_id") @db.Uuid
+  text       String
+  pageNumber Int?     @map("page_number")
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  userBook UserBook @relation(fields: [userBookId], references: [id], onDelete: Cascade)
+
+  @@index([userBookId, recordedAt])
+  @@map("feelings")
+}
