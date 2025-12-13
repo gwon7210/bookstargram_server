@@ -25,6 +25,34 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Book Search API
+
+The server exposes `GET /books/search`, which proxies the [Naver Book Search](https://developers.naver.com/docs/serviceapi/search/book/book.md) open API.
+
+- `query` (required): search keyword.
+- `start` (optional): positive integer that indicates the start index (defaults to `1`).
+- `display` (optional): positive integer that controls how many results are returned per page (defaults to Naver's `10` and is capped by Naver at `100`).
+
+Example:
+
+```bash
+curl -G "http://localhost:3000/books/search" \
+  --data-urlencode "query=클린코드"
+```
+
+The response mirrors Naver's payload, so you receive `total`, `display`, `start`, and the `items` array that contains each book entry.
+
+## Environment variables
+
+Store external API keys in your local `.env` file (already git-ignored) so they do not get checked into source control. Add the following entries with the credentials issued from Naver:
+
+```bash
+NAVER_CLIENT_ID=your-client-id
+NAVER_CLIENT_SECRET=your-client-secret
+```
+
+The application loads `.env` automatically via Nest's `ConfigModule`, so once those values exist you can simply run `npm run start:dev` and the credentials will be available at runtime. In production, inject those values via your deployment platform's secret manager (AWS Secrets Manager, GCP Secret Manager, Vercel/Render project secrets, etc.) so the process reads them from `process.env` without ever committing them to the repository.
+
 ## Project setup
 
 ```bash
