@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { createHmac } from 'crypto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 const DEFAULT_EXP_SECONDS = 60 * 60 * 24; // 24h
 
@@ -21,6 +21,47 @@ export class JwtService {
     const signature = createHmac('sha256', this.secret).update(data).digest('base64url');
 
     return `${data}.${signature}`;
+  }
+
+  verify<TPayload extends Record<string, unknown> = Record<string, unknown>>(token: string): TPayload {
+    if (!token) {
+      throw new UnauthorizedException('Missing token.');
+    }
+
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new UnauthorizedException('Invalid token format.');
+    }
+
+    const [encodedHeader, encodedPayload, receivedSignature] = parts;
+    const data = `${encodedHeader}.${encodedPayload}`;
+    const expectedSignature = createHmac('sha256', this.secret).update(data).digest('base64url');
+
+    const expectedBuffer = Buffer.from(expectedSignature);
+    const receivedBuffer = Buffer.from(receivedSignature);
+
+    if (
+      expectedBuffer.length !== receivedBuffer.length ||
+      !timingSafeEqual(expectedBuffer, receivedBuffer)
+    ) {
+      throw new UnauthorizedException('Invalid token signature.');
+    }
+
+    const payloadJson = Buffer.from(encodedPayload, 'base64url').toString('utf8');
+
+    let payload: TPayload & { exp?: number };
+    try {
+      payload = JSON.parse(payloadJson);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token payload.', { cause: error as Error });
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    if (typeof payload.exp === 'number' && payload.exp < now) {
+      throw new UnauthorizedException('Token expired.');
+    }
+
+    return payload;
   }
 
   private base64UrlEncode(input: string): string {

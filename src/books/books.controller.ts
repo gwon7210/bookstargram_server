@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Query } from '@nestjs/common';
 import { BooksService } from './books.service';
 
 @Controller('books')
@@ -25,6 +25,20 @@ export class BooksController {
       start: parsedStart,
       display: parsedDisplay,
     });
+  }
+
+  @Get(':isbn13')
+  getBookByIsbn13(@Param('isbn13') isbn13: string) {
+    const normalized = isbn13?.trim();
+    if (!normalized) {
+      throw new BadRequestException('isbn13 is required.');
+    }
+
+    if (!/^\d{13}$/.test(normalized)) {
+      throw new BadRequestException('isbn13 must be a 13-digit numeric string.');
+    }
+
+    return this.booksService.getBookByIsbn13(normalized);
   }
 
   private parsePositiveInt(value: string | undefined, field: string): number | undefined {

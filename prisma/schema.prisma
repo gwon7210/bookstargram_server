@@ -41,7 +41,6 @@ model UserBook {
   coverUrl    String?       @map("cover_url")
   status      ReadingStatus @default(reading)
   currentPage Int           @default(0) @map("current_page")
-  progressPct Int           @default(0) @map("progress_pct") @db.SmallInt
   goalDate    DateTime?     @map("goal_date") @db.Date
   startedAt   DateTime?     @map("started_at") @db.Date
   finishedAt  DateTime?     @map("finished_at") @db.Date

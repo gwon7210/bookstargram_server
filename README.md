@@ -27,28 +27,59 @@
 
 ## Book Search API
 
-The server exposes `GET /books/search`, which proxies the [Naver Book Search](https://developers.naver.com/docs/serviceapi/search/book/book.md) open API.
+The server exposes `GET /books/search`, which proxies the [Aladin ItemSearch](https://blog.aladin.co.kr/openapi/) open API.
 
 - `query` (required): search keyword.
 - `start` (optional): positive integer that indicates the start index (defaults to `1`).
-- `display` (optional): positive integer that controls how many results are returned per page (defaults to Naver's `10` and is capped by Naver at `100`).
+- `display` (optional): positive integer that controls how many results are returned per page (defaults to `10` and is capped by Aladin at `100`).
 
 Example:
 
 ```bash
 curl -G "http://localhost:3000/books/search" \
-  --data-urlencode "query=클린코드"
+  --data-urlencode "query=클린코드" \
+  --data-urlencode "start=1" \
+  --data-urlencode "display=10"
 ```
 
-The response mirrors Naver's payload, so you receive `total`, `display`, `start`, and the `items` array that contains each book entry.
+The response mirrors Aladin's payload, so you receive their JSON exactly as returned from the upstream API.
+
+For ISBN13 lookups, call `GET /books/:isbn13`, which forwards to Aladin's ItemLookUp API:
+
+```bash
+curl "http://localhost:3000/books/9788998139766"
+```
+
+The server validates that `isbn13` is a 13-digit numeric string and responds with the ItemLookUp JSON. If the upstream API returns no items, you receive `404 Not Found`.
+
+## User Book API
+
+`GET /user-books` returns the caller's books ordered by most recently registered first. `POST /user-books` lets an authenticated user register a book. `PATCH /user-books/:id` updates only `pageCount`, `currentPage`, or `goalDate` for the specified entry. Include a valid `Authorization: Bearer <token>` header and supply at least `externalId` and `title` when creating. Other fields are optional:
+
+```json
+{
+  "externalId": "9788960773431",
+  "title": "클린 코드",
+  "author": "로버트 마틴",
+  "pageCount": 500,
+  "coverUrl": "https://example.com/clean-code.jpg",
+  "status": "reading",
+  "currentPage": 120,
+  "goalDate": "2025-05-01",
+  "startedAt": "2025-03-01"
+}
+```
+
+Supported `status` values match the Prisma enum (`reading`, `done`, `paused`, `wish`). Date-related fields accept ISO strings (e.g., `YYYY-MM-DD`). If the `(userId, externalId)` pair already exists, the API returns `409 Conflict`.
+
+When `externalId` is a 13-digit ISBN and `pageCount` is omitted, the server automatically calls `GET /books/:isbn13` to fetch Aladin metadata and fills `pageCount` with `itemPage` from the upstream response (if present).
 
 ## Environment variables
 
-Store external API keys in your local `.env` file (already git-ignored) so they do not get checked into source control. Add the following entries with the credentials issued from Naver:
+Store external API keys in your local `.env` file (already git-ignored) so they do not get checked into source control. Add the following entry with the credential issued from Aladin:
 
 ```bash
-NAVER_CLIENT_ID=your-client-id
-NAVER_CLIENT_SECRET=your-client-secret
+ALADIN_API_KEY=ttbgwon72102053001
 ```
 
 The application loads `.env` automatically via Nest's `ConfigModule`, so once those values exist you can simply run `npm run start:dev` and the credentials will be available at runtime. In production, inject those values via your deployment platform's secret manager (AWS Secrets Manager, GCP Secret Manager, Vercel/Render project secrets, etc.) so the process reads them from `process.env` without ever committing them to the repository.
