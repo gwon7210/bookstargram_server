@@ -135,6 +135,32 @@ export class UserBooksService {
     });
   }
 
+  async deleteUserBook(userId: string, userBookId: string) {
+    const sanitizedUserId = userId?.trim();
+    const sanitizedBookId = userBookId?.trim();
+
+    if (!sanitizedUserId) {
+      throw new BadRequestException('userId is required.');
+    }
+
+    if (!sanitizedBookId) {
+      throw new BadRequestException('userBookId is required.');
+    }
+
+    const existing = await this.prisma.userBook.findUnique({
+      where: { id: sanitizedBookId },
+      select: { userId: true },
+    });
+
+    if (!existing || existing.userId !== sanitizedUserId) {
+      throw new NotFoundException('User book not found.');
+    }
+
+    return this.prisma.userBook.delete({
+      where: { id: sanitizedBookId },
+    });
+  }
+
   private normalizeStatus(status?: ReadingStatus | string): ReadingStatus {
     if (!status) {
       return ReadingStatus.reading;

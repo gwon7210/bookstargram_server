@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateUserBookDto } from './dto/create-user-book.dto';
@@ -34,5 +34,10 @@ export class UserBooksController {
     @Body() body: UpdateUserBookDto,
   ) {
     return this.userBooksService.updateUserBook(request.user.id, id, body);
+  }
+
+  @Delete(':id')
+  remove(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
+    return this.userBooksService.deleteUserBook(request.user.id, id);
   }
 }
