@@ -29,7 +29,7 @@ export class UserBooksService {
 
     return this.prisma.userBook.findMany({
       where: { userId: sanitizedUserId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
     });
   }
 

@@ -27,6 +27,7 @@ model User {
   createdAt   DateTime @default(now()) @map("created_at")
 
   userBooks UserBook[]
+  feelings  Feeling[]
 
   @@map("users")
 }
@@ -70,12 +71,14 @@ model ReadingEntry {
 }
 
 model Feeling {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         Int      @id @default(autoincrement())
+  userId     String   @map("user_id") @db.Uuid
   userBookId String   @map("user_book_id") @db.Uuid
   text       String
   pageNumber Int?     @map("page_number")
   recordedAt DateTime @default(now()) @map("recorded_at")
 
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userBook UserBook @relation(fields: [userBookId], references: [id], onDelete: Cascade)
 
   @@index([userBookId, recordedAt])

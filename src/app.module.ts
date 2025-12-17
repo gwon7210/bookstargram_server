@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { BooksModule } from './books/books.module';
 import { UserBooksModule } from './user-books/user-books.module';
+import { FeelingsModule } from './feelings/feelings.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { UserBooksModule } from './user-books/user-books.module';
     AuthModule,
     BooksModule,
     UserBooksModule,
+    FeelingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
